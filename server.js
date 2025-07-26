@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // Autorise toutes les origines, à adapter si tu veux restreindre
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
@@ -17,33 +17,36 @@ const PORT = process.env.PORT || 10000;
 
 app.use(cors());
 
-app.get("/", (req, res) => {
-  res.send("🚀 Serveur de chat aléatoire en ligne");
+app.get('/', (req, res) => {
+  res.send('🚀 Serveur de chat aléatoire en ligne');
 });
 
 io.on('connection', (socket) => {
   console.log(`🟢 Nouveau client connecté : ${socket.id}`);
-  addUser(socket);
 
-  const partner = findMatch(socket);
-  if (partner) {
-    socket.partner = partner;
-    partner.partner = socket;
-    socket.emit("system", "Tu es connecté à un inconnu.");
-    partner.emit("system", "Tu es connecté à un inconnu.");
-  } else {
-    socket.emit("system", "En attente d’un partenaire...");
-  }
+  socket.on('userInfo', (userInfo) => {
+    addUser(socket, userInfo);
 
-  socket.on("message", (msg) => {
-    if (socket.partner) {
-      socket.partner.emit("message", msg);
+    const partner = findMatch(socket);
+    if (partner) {
+      socket.partner = partner;
+      partner.partner = socket;
+      socket.emit('system', 'Tu es connecté à un inconnu.');
+      partner.emit('system', 'Tu es connecté à un inconnu.');
+    } else {
+      socket.emit('system', 'En attente d’un partenaire...');
     }
   });
 
-  socket.on("next", () => {
+  socket.on('message', (msg) => {
     if (socket.partner) {
-      socket.partner.emit("system", "Ton partenaire est parti.");
+      socket.partner.emit('message', msg);
+    }
+  });
+
+  socket.on('next', () => {
+    if (socket.partner) {
+      socket.partner.emit('system', 'Ton partenaire est parti.');
       socket.partner.partner = null;
       socket.partner = null;
     }
@@ -52,17 +55,17 @@ io.on('connection', (socket) => {
     if (newPartner) {
       socket.partner = newPartner;
       newPartner.partner = socket;
-      socket.emit("system", "Nouveau partenaire trouvé.");
-      newPartner.emit("system", "Nouveau partenaire trouvé.");
+      socket.emit('system', 'Nouveau partenaire trouvé.');
+      newPartner.emit('system', 'Nouveau partenaire trouvé.');
     } else {
-      socket.emit("system", "En attente d’un nouveau partenaire...");
+      socket.emit('system', 'En attente d’un nouveau partenaire...');
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on('disconnect', () => {
     console.log(`🔴 Déconnexion : ${socket.id}`);
     if (socket.partner) {
-      socket.partner.emit("system", "Ton partenaire s’est déconnecté.");
+      socket.partner.emit('system', 'Ton partenaire s’est déconnecté.');
       socket.partner.partner = null;
     }
     removeUser(socket);
