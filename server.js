@@ -51,6 +51,10 @@ io.on('connection', (socket) => {
       socket.partner = null;
     }
 
+    // Remet socket en attente
+    removeUser(socket);
+    addUser(socket, socket.userInfo);
+
     const newPartner = findMatch(socket);
     if (newPartner) {
       socket.partner = newPartner;
