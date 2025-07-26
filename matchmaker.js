@@ -1,7 +1,11 @@
 const waitingUsers = [];
 
+function arraysIntersect(arr1, arr2) {
+  return arr1.some(item => arr2.includes(item));
+}
+
 function addUser(socket, userInfo) {
-  socket.userInfo = userInfo; // { genre, interet }
+  socket.userInfo = userInfo; // { genre, genreInteret: [], interets: [] }
   waitingUsers.push(socket);
 }
 
@@ -18,8 +22,12 @@ function findMatch(socket) {
     if (
       candidate !== socket &&
       !candidate.partner &&
-      candidate.userInfo.genre === socket.userInfo.genre &&
-      candidate.userInfo.interet === socket.userInfo.interet
+      // Le genre du candidat est dans la liste des genres recherchés par socket
+      socket.userInfo.genreInteret.includes(candidate.userInfo.genre) &&
+      // Le genre de socket est dans la liste des genres recherchés par le candidat
+      candidate.userInfo.genreInteret.includes(socket.userInfo.genre) &&
+      // Au moins un intérêt commun
+      arraysIntersect(socket.userInfo.interets, candidate.userInfo.interets)
     ) {
       waitingUsers.splice(i, 1);
       return candidate;
